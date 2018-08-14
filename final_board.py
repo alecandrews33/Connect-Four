@@ -94,11 +94,13 @@ class Connect4Board:
 
         Return value: the list of possible moves
         '''
-        lst = []
-        for index in range(7):
-            if self.board[5][index] == 0:
-                lst.append(index)
-        return lst
+        open_columns = []
+        for column in range(7):
+            # Check the top row to determine if a piece can be played in a 
+            # given column. If this row is empty, the column is available.
+            if self.board[5][column] == 0:
+                open_columns.append(column)
+        return open_columns
 
     def makeMove(self, col, player):
         '''
@@ -121,16 +123,13 @@ class Connect4Board:
         moves = self.possibleMoves() 
         if col not in moves:
             raise MoveError("That column is full.")
-        if self.get(0, col) == 0:
-            self.board[0][col] = player
-            self.moves.append((0, col))
-        else:
-            for row in range(0, 5):
-                if self.get(row + 1, col) == 0:
-                    if self.get(row, col) != 0:
-                        self.board[row + 1][col] = player
-                        self.moves.append((row + 1, col))
-                        break
+        
+        # Find the highest open row in the given column and place piece.
+        for row in range(0, 6):
+            if self.get(row, col) == 0:
+                self.board[row][col] = player
+                self.moves.append((row, col))
+                break
             
                 
 
@@ -151,33 +150,52 @@ class Connect4Board:
             raise MoveError("This is an invalid column value.")
         if self.board[0][col] == 0:
             raise MoveError("You cannot undo a move from an empty column.")
-        row = 5
-        while True:
+
+        # Find the highest piece in the given column and remove it.
+        for row in range(5, -1, -1):
             if self.board[row][col] != 0:
                 self.board[row][col] = 0
                 break
-            row -= 1
+
+        # Remove the most recent move.
         self.moves.pop()
             
     def vertWin(self, col):
         '''This method checks to see if a win has been achieved in the vertical
         direction.'''
+
+        # A win would only come from the last move. 
         last = self.moves[-1]
         row = last[0]
+
+        # A vertical win would require a piece to be in the 4th highest row.
         if row >= 3:
+            # Check if the last four pieces placed in the given column
+            # are from the same team.
             for n in range(1,4):
                 if self.get(row - n, col) != self.get(row, col):
+                    # Any difference in this set of 4 would not result 
+                    # in a win.
                     return False
+            # 4 consecutive vertical pieces from the same team results
+            # in a win.
             return True
+        else:
+            return False
    
     def horizWin(self, col):
         '''This method checks to see if a win has been achieved in the 
         horizontal direction.'''
+
+        # A win could only result from the most recent move.
         last = self.moves[-1]
         row = last[0]
         value = self.get(row, col)
         columns = 0
-        
+
+        # Find how many consecutive columns to the right of the given 
+        # column have the same value (are from the same team). Return 
+        # a win if there are 3 (the fourth is given).   
         for n in range (1, 4):
             if col + n < 7:
                 if self.get(row, col + n) == value:
@@ -188,7 +206,11 @@ class Connect4Board:
                     break
             else:
                 break
-            
+        
+        # Keep adding to the column total by checking the columns
+        # to the left of the given column. If they have the same 
+        # value as the given column, increment the columns counter.
+        # Return a win if there are 3 (the fourth is given).
         for n in range(1, 4):
             if col - n >= 0:
                 if self.get(row, col - n) == value:
@@ -205,16 +227,21 @@ class Connect4Board:
     def diagWin(self,col):
         '''This helper function checks to see if four same-colored tiles were
         placed consecutively along a diagonal.'''
+
+        # A win could only have resulted from the last move.
         last = self.moves[-1]
         row = last[0]
         value = self.get(row, col)
-        tiles = 0
+        pieces = 0
+
+        # See how many consecutive pieces going from bottom left to the top 
+        # right are of the same value as the last played piece.
         for n in range(1, 4):
             new_row = row + n
             new_col = col + n            
             if new_row <= self.rows - 1 and new_col <= self.columns - 1:
                 if self.get(new_row, new_col) == value:
-                    tiles += 1
+                    pieces += 1
                 else: 
                     break
             else:
@@ -224,12 +251,17 @@ class Connect4Board:
             new_col = col - n            
             if new_row >= 0 and new_col >= 0:
                 if self.get(new_row, new_col) == value:
-                    tiles += 1
+                    pieces += 1
                 else: 
                     break
             else: 
                 break
-        if tiles >= 3:
+
+        # If at least 3 other pieces are found of the same value
+        # in this diagonal direction, then return true. Otherwise,
+        # reset the piece counter and check for a diagonal win 
+        # in the other direction (top left to bottom right).
+        if pieces >= 3:
             return True
         tiles = 0
         for n in range(1, 4):
@@ -252,6 +284,10 @@ class Connect4Board:
                     break
             else:
                 break
+
+        # If at least 3 other pieces are found of the same value
+        # in this diagonal direction, then return true. Otherwise,
+        # return false as no diagonal win has been found.
         if tiles >= 3:
             return True
         else:
@@ -317,6 +353,9 @@ class Connect4Board:
 
         Precondition: This assumes that the move can be made.
         '''
+
+        # Make the move on a copy of the board and see if it results
+        # in a win.
         copy = self.clone()
         copy.makeMove(col, player)
         if copy.isWin(col) == True:
@@ -338,6 +377,8 @@ class Connect4Board:
         move has been checked to see that it does not result in a win.
         '''
         
+        # Make the move on a copy of the board and see if it results 
+        # in a draw.
         copy = self.clone()
         copy.makeMove(col, player)
         if copy.isDraw() == True:
