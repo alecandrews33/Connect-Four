@@ -31,10 +31,11 @@ class RandomPlayer:
         Invariant: The board state does not change.
         '''
 
+        # Gather a list of the possible moves and pick one randomly.
         assert player in [1, 2]
-        possibles = board.possibleMoves()
-        assert possibles != []
-        return random.choice(possibles)
+        possible_moves = board.possibleMoves()
+        assert possible_moves != []
+        return random.choice(possible_moves)
 
 
 class SimplePlayer:
@@ -55,15 +56,21 @@ class SimplePlayer:
         Invariant: The board state does not change.
         '''
         
+        # Get the possible moves, and see if any of them would 
+        # result in a win. 
         assert player in [1, 2]
-        possibles = board.possibleMoves()
-        assert possibles != []
-        for column in possibles:
+        possible_moves = board.possibleMoves()
+        assert possible_moves != []
+        for column in possible_moves:
+            # Create a copy of the board to try each move 
+            # without changing board state.
             copy = board.clone()
             copy.makeMove(column, player)
+            # If a move would yield a win, take that move.
             if copy.isWin(column) == True:
-                return column
-        return random.choice(possibles)
+                return column 
+        # If no moves yield a win, then pick a random move.
+        return random.choice(possible_moves)
 
 
 class BetterPlayer:
@@ -87,33 +94,52 @@ class BetterPlayer:
         '''
 
         assert player in [1, 2]
-        possibles = board.possibleMoves()
+        possible_moves = board.possibleMoves()
+        # Find the opponent.
         if player == 1:
             opponent = 2
         else:
             opponent = 1
-        assert possibles != []
-        if len(possibles) == 1:
-            return possibles[0]
-        lst = []
-        lst2 = []
-        for column in possibles:
-            board1 = board.clone()
-            board1.makeMove(column, player)          
-            if board1.isWin(column) == True:
+        assert possible_moves != []
+        # If only one available move, take it.
+        if len(possible_moves) == 1:
+            return possible_moves[0]
+        opponent_winners = []
+        # Look through possible moves and find which ones 
+        # give the opponent an opportunity to win.
+        for column in possible_moves:
+            copy = board.clone()
+            copy.makeMove(column, player) 
+            # If a move yields a win, take that move.         
+            if copy.isWin(column) == True:
                 return column 
-            possibles1 = board1.possibleMoves()
-            for move in possibles1:
-                board2 = board1.clone()
-                board2.makeMove(move, opponent)
-                if board2.isWin(move) == True:
-                    lst.append(column)
-        for column in possibles:
-            if column not in lst:
-                lst2.append(column)
-        if lst2 == []:
-            return random.choice(possibles)
-        return random.choice(lst2)
+            # See what moves the opponent will have 
+            # available to them after your move.
+            next_moves = copy.possibleMoves()
+            for move in next_moves:
+                next_copy = copy.clone()
+                next_copy.makeMove(move, opponent)
+                # If the opponent has a chance to win 
+                # after this move, then add it to the
+                # opponent winners list and stop looking 
+                # at the opponent's moves.
+                if next_copy.isWin(move) == True:
+                    opponent_winners.append(column)
+                    break
+        # If all moves allow the opponent a chance to win, 
+        # pick a random one.
+        if opponent_winners == possible_moves:
+            return random.choice(possible_moves)
+        # Otherwise, get a list of the moves that don't 
+        # allow the opponent to win, and choose a random 
+        # move from that list.
+        else:
+            opponent_blockers = []
+            for move in possible_moves:
+                if move not in opponent_winners:
+                    opponent_blockers.append(move)
+            return random.choice(opponent_blockers)
+
                 
             
 
@@ -152,29 +178,43 @@ class Monty:
         Precondition: There must be at least one legal move.
         Invariant: The board state does not change.
         '''
+
+        # Establish the highest number of wins and set the opponent.
+        # Choose the first move as the initial best move.
         best = 0
         if player == 1:
             opponent = 2
         else:
             opponent = 1
-        possibles = board.possibleMoves()
-        top_move = possibles[0]
-        for move in possibles:
-            board_copy = board.clone()
-            board_copy.makeMove(move, player)
-            if board_copy.isWin(move) == True:
+        possible_moves = board.possibleMoves()
+        top_move = possible_moves[0]
+        # For each possible move, make the move on a copy of the board.
+        for move in possible_moves:
+            copy = board.clone()
+            copy.makeMove(move, player)
+            # If a move would yield a win, take that move.
+            if copy.isWin(move) == True:
                 return move
+            # Otherwise, initialize the number of wins to 0 and 
+            # simulate the number of games that were already 
+            # defined using simple players on both sides.
             else:
                 wins = 0
                 for n in range(self.n):
-                    board_copy2 = board_copy.clone()
-                    sim = Connect4Simulator(board_copy2, SimplePlayer(),
+                    copy2 = copy.clone()
+                    sim = Connect4Simulator(copy2, SimplePlayer(),
                                             SimplePlayer(), opponent)                    
                     result = sim.simulate()
+                    # Keep track of how many simulated wins the player has
+                    # after making the current move.
                     if result == player:
                         wins += 1
+                # If this move yielded more simulated wins than what was 
+                # previously the best, set it as the top move, and keep 
+                # track of how many wins it had.
                 if wins > best:
                     best = wins
                     top_move = move
+        # Return the top move that won the most simulated games.
         return top_move
 

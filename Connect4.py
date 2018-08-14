@@ -25,21 +25,21 @@ class Connect4:
     def show(self):
         '''Print the board to the terminal, along with the player to move.'''
 
-        print
+        print()
         print ('     top')
-        print '-------------'
+        print ('-------------')
         for row in range(self.nrows-1, -1, -1):
             for col in range(0, self.ncols):
                 val = self.board.get(row, col)
                 if val == 0:
-                    print '.',
+                    print ('. ', end = ''),
                 else:
-                    print val,
-            print
-        print '-------------'
-        print '0 1 2 3 4 5 6'
-        print '   column'
-        print
+                    print ('%s ' % val, end = ''),
+            print()
+        print ('-------------')
+        print ('0 1 2 3 4 5 6')
+        print ('   column')
+        print()
 
     def makeMove(self, col, player):
         '''
@@ -82,18 +82,18 @@ class Connect4:
         '''
 
         game.show()
-        print 'Player %d to move.\n' % self.toMove
+        print ('Player %d to move.\n' % self.toMove)
 
         while True:
             try:
                 if self.toMove == 1:  # player 1 = human
-                    cmd = raw_input('*** Enter command: ')
+                    cmd = input('*** Enter command: ')
                     cmd.strip()  # ignore whitespace
                     if cmd == 'q':
-                        print 'Quitting...'
+                        print ('Quitting...')
                         break
                     elif cmd == 'u':
-                        print 'Undoing last move...'
+                        print ('Undoing last move...')
                         self.unmakeMove()
                         self.show()
                         continue
@@ -105,38 +105,39 @@ class Connect4:
                 else:  # player 2 = computer
                     col = self.opponent.chooseMove(self.board.clone(), 2)
                     self.makeMove(col, 2)
-                    print 'Computer plays on column %d...' % col
+                    print ('Computer plays on column %d...' % col)
                     self.show()
 
                 # Check for wins or draws.
                 if self.board.isWin(col):
-                    print "Game over: player %d wins!" % self.toMove
+                    print ("Game over: player %d wins!" % self.toMove)
                     return
 
                 if self.board.isDraw():
-                    print "Game over: the game is a draw."
+                    print ("Game over: the game is a draw.")
                     return
 
                 self.changePlayerToMove()
-                print 'Player %d to move.\n' % self.toMove
+                print ('Player %d to move.\n' % self.toMove)
 
-            except ValueError, e:
-                print e
-                print >> sys.stderr, 'Invalid command; try again...'
+            except ValueError as e:
+                print (e)
+                print ('Invalid command; try again...', file = sys.stderr)
 
-            except MoveError, e:
-                print e
-                print >> sys.stderr, 'Move error; try again...'
+            except MoveError as e:
+                print (e)
+                print ('Move error; try again...', file = sys.stderr)
 
-            except BoardError, e:
-                print e
-                print >> sys.stderr, 'Board error; try again...'
+            except BoardError as e:
+                print (e)
+                print ('Board error; try again...', file = sys.stderr)
 
 if __name__ == '__main__':
     players = ['random', 'simple', 'better', 'monty']
 
-    print 'Computer players: %s' % players
-    player = raw_input('Enter name of computer player: ')
+    print('Computer players: %s' % players) 
+    
+    player = input('Enter name of computer player: ')
 
     if player == 'random':
         opponent = RandomPlayer()
@@ -145,19 +146,19 @@ if __name__ == '__main__':
     elif player == 'better':
         opponent = BetterPlayer()
     elif player == 'monty':
-        nsims = int(raw_input('Enter number of simulations per move: '))
+        nsims = int(input('Enter number of simulations per move: '))
         assert nsims > 0
         player = SimplePlayer()
         opponent = Monty(nsims, player)
     else:
-        print >> sys.stderr, 'Invalid player name.  Exiting.'
+        print ('Invalid player name.  Exiting.', file = sys.stderr)
         sys.exit(1)
 
     toMove = random.choice([1, 2])
 
-    print
-    print 'First player to move: %d' % toMove
-    print
+    print(toMove)
+    print ('First player to move: %d' % toMove)
+    print()
 
     game = Connect4(opponent, toMove)
     game.play()
